@@ -1,0 +1,146 @@
+import risar
+from random import randint
+from math import sqrt
+from PyQt5.QtWidgets import QMessageBox
+from random import choice
+import sys
+
+class Game():
+    def __init__(self):
+        pass
+    def main(self):
+        self.balls = []
+        self.vx = []
+        self.vy = []
+        self.mouse_x, self.mouse_y = risar.miska
+        self.mouse_ball = risar.krog(self.mouse_x, self.mouse_y, 30)
+        self.c = self.mouse_ball.pen().color().lighter()
+        self.c.setAlpha(192)
+        self.mouse_ball.setBrush(self.c)
+        self.exploded_balls = []
+        self.exploded_balls.append((self.mouse_x, self.mouse_y))
+        self.krog = risar.krog(-100, -100, 30, risar.bela, 3)
+        self.last_mouse_coor = []
+        self.last_mouse_coor.append((self.mouse_x, self.mouse_y))
+        self.l_mouse = 4
+        self.ball_ex = []
+        self.count = 0
+        self.time_ball_explode = {}
+        self.ex_balls = []
+
+    def more_balls(self):
+        for i in range(self.out_of):
+            self.x, self.y = randint(11, risar.maxX - 11), randint(11, risar.maxY - 11)
+            self.barva = risar.nakljucna_barva()
+            self.sirina = 3
+            self.radius = 10
+            self.ball = risar.krog(self.x, self.y, self.radius, self.barva, self.sirina)
+            self.balls.append(self.ball)
+            self.m = randint(-5, 5)
+            n = sqrt((5 ** 2) - self.m ** 2)
+            vy = choice([-1, 1])
+            self.vx.append(self.m * vy)
+            self.vy.append(n * vy)
+
+    def moving_balls(self):
+        while True:
+            for i in range(len(self.balls)):
+                self.ball = self.balls[i]
+                self.mouse_circle()
+                self.ball.setPos(self.ball.x() + self.vx[i], self.ball.y() + self.vy[i])
+                self.mouse_ball.setPos(self.mouse_x, self.mouse_y)
+                if not (10 < self.ball.x() < risar.maxX - 10):
+                    self.vx[i] = -self.vx[i]
+                if not (10 < self.ball.y() < risar.maxY - 10):
+                    self.vy[i] = -self.vy[i]
+            risar.cakaj(0.02)
+            if risar.klik == True:
+                self.l_mouse -= 0.05
+                self.time_of_explosion()
+
+    def mouse_circle(self):
+        if risar.klik == False:
+            self.mouse_x, self.mouse_y = risar.miska
+            self.exploded_balls.append((self.mouse_x, self.mouse_y))
+            self.exploded_balls.pop(0)
+            self.last_mouse_coor.append((self.mouse_x, self.mouse_y))
+            self.last_mouse_coor.pop(0)
+        if risar.klik == True:
+            self.mouse_ball.hide()
+            self.mouse_c()
+            self.explode_balls()
+
+    def explode_balls(self):
+        for coords in self.exploded_balls:
+            self.mouse_x, self.mouse_y = coords
+            if sqrt((self.ball.x() - self.mouse_x) ** 2 + (self.ball.y() - self.mouse_y) ** 2) < 40:
+                if (self.ball.x(), self.ball.y()) not in self.exploded_balls:
+                    if self.ball not in self.ex_balls:
+                        self.ball_ex.append(self.ball)
+                        self.ex_balls.append(self.ball)
+                        self.exploded_balls.append((self.ball.x(), self.ball.y()))
+                    self.time_ball_explode[self.ball] = 4
+                self.ball.setRect(-30, -30, 60, 60)
+                self.c = self.ball.pen().color().lighter()
+                self.c.setAlpha(192)
+                self.ball.setBrush(self.c)
+                self.ball = self.mouse_ball
+
+    def time_of_explosion(self):
+        for ball in self.ball_ex:
+            self.time_ball_explode[ball] -= 0.045
+            if self.time_ball_explode[ball] <= 0:
+                self.exploded_balls.remove((ball.x(), ball.y()))
+                self.ball_ex.remove(ball)
+                del self.time_ball_explode[ball]
+                risar.odstrani(ball)
+                self.count += 1
+                self.game_over()
+
+    def mouse_c(self):
+        for x, y in self.last_mouse_coor:
+            self.krog.setPos(x, y)
+            if self.l_mouse <= 0:
+                self.last_mouse_coor.clear()
+                self.exploded_balls.pop(0)
+                risar.odstrani(self.krog)
+                self.krog.setPos(-100, -100)
+                if len(self.ball_ex) == 0:
+                    print(QMessageBox.information(None, f"Level {self.level}", "You Lost!"))
+                    print(QMessageBox.information(None, f"Level {self.level}", "Try again"))
+                    self.levels()
+
+    def game_over(self):
+        if len(self.ball_ex) == 0:
+            if self.count >= self.get_balls:
+                print(QMessageBox.information(None, f"Level {self.level}", "You win!"))
+                self.level += 1
+                self.get_balls += 2
+                self.out_of += 3
+                self.levels()
+            else:
+                print(QMessageBox.information(None, f"Level {self.level}", "You lost!"))
+                print(QMessageBox.information(None, f"Level {self.level}", "Try again"))
+                self.levels()
+
+class Levels(Game):
+    def __init__(self):
+        super().__init__()
+        self.level = 1
+        self.get_balls = 2
+        self.out_of = 9
+        QMessageBox.information(None, "Chain Reaction", f"Welcome to Chain Reaction")
+        self.levels()
+
+    def levels(self):
+        risar.pobrisi()
+        risar.klik = False
+        self.main()
+        if self.level < 11:
+            QMessageBox.information(None, f"Level {self.level}", f"Get {self.get_balls} out of {self.out_of} balls")
+            self.more_balls()
+            self.moving_balls()
+        QMessageBox.information(None, "Game Over", "Congratulations, You Won the game!")
+        sys.exit(0)
+
+Levels()
