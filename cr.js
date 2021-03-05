@@ -187,9 +187,13 @@ class ChainReaction {
     }
 }
 
-const RADIUS = canvas.width*0.01;
+let RADIUS = 15;
 const TIME = 3000; // ms
-const SPEED = 4;
+let SPEED = 4;
+if (canvas.width<600) {
+    SPEED = 2.7;
+    RADIUS = 6;
+}
 let BALLS = 40;
 let COLLECT = 0.4;
 let LEVEL = 1;
