@@ -157,7 +157,7 @@ class ChainReaction {
         canvas.addEventListener('click', function(e) {
             if (!that.mouseball.exploded) {
                 that.mouseball.explode();
-                that.mouseball.radius = that.mouseball.radius/2;
+                that.mouseball.radius = that.mouseball.radius/2.5;
                 that.exploded = 1;
             }
         });
